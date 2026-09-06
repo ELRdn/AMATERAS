@@ -1,0 +1,230 @@
+[
+  {
+    "path": ".gitignore",
+    "size_bytes": 119
+  },
+  {
+    "path": "ACCEPTANCE_CRITERIA.md",
+    "size_bytes": 2551
+  },
+  {
+    "path": "ASTRA_IMPLEMENTATION_PROMPT.md",
+    "size_bytes": 1149
+  },
+  {
+    "path": "BRAND.md",
+    "size_bytes": 2238
+  },
+  {
+    "path": "DATA_SOURCES.md",
+    "size_bytes": 6361
+  },
+  {
+    "path": "DECISIONS.md",
+    "size_bytes": 3096
+  },
+  {
+    "path": "DESIGN.md",
+    "size_bytes": 4788
+  },
+  {
+    "path": "IMPLEMENTATION_REPORT.md",
+    "size_bytes": 6528
+  },
+  {
+    "path": "index.html",
+    "size_bytes": 635
+  },
+  {
+    "path": "MVP_ROADMAP.md",
+    "size_bytes": 1380
+  },
+  {
+    "path": "package.json",
+    "size_bytes": 1081
+  },
+  {
+    "path": "playwright.config.ts",
+    "size_bytes": 520
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "size_bytes": 82536
+  },
+  {
+    "path": "PROJECT_SPEC.md",
+    "size_bytes": 2506
+  },
+  {
+    "path": "public/data/places.json",
+    "size_bytes": 360765
+  },
+  {
+    "path": "public/data/provenance.json",
+    "size_bytes": 317
+  },
+  {
+    "path": "public/data/style-dark.json",
+    "size_bytes": 20958
+  },
+  {
+    "path": "public/data/style-liberty.json",
+    "size_bytes": 43078
+  },
+  {
+    "path": "public/favicon.svg",
+    "size_bytes": 280
+  },
+  {
+    "path": "README.md",
+    "size_bytes": 3932
+  },
+  {
+    "path": "REFERENCE_UI_ANALYSIS.md",
+    "size_bytes": 11750
+  },
+  {
+    "path": "references/palette_A_cyber_radar.png",
+    "size_bytes": 1705618
+  },
+  {
+    "path": "references/palette_C_logo_reference.png",
+    "size_bytes": 1486125
+  },
+  {
+    "path": "references/reference_contact_sheet.png",
+    "size_bytes": 4039471
+  },
+  {
+    "path": "references/reference_weather_radar.mp4",
+    "size_bytes": 7169824
+  },
+  {
+    "path": "scripts/browser-qa.mjs",
+    "size_bytes": 3354
+  },
+  {
+    "path": "scripts/inspect-sources.mjs",
+    "size_bytes": 930
+  },
+  {
+    "path": "scripts/probe-r8.mjs",
+    "size_bytes": 981
+  },
+  {
+    "path": "scripts/smoke-live.mjs",
+    "size_bytes": 1911
+  },
+  {
+    "path": "scripts/sync-static.mjs",
+    "size_bytes": 3935
+  },
+  {
+    "path": "server/api.ts",
+    "size_bytes": 6723
+  },
+  {
+    "path": "server/worker.ts",
+    "size_bytes": 1256
+  },
+  {
+    "path": "src/App.tsx",
+    "size_bytes": 31821
+  },
+  {
+    "path": "src/components/Modal.tsx",
+    "size_bytes": 895
+  },
+  {
+    "path": "src/data/fixtures.ts",
+    "size_bytes": 1907
+  },
+  {
+    "path": "src/data/normalize.ts",
+    "size_bytes": 4616
+  },
+  {
+    "path": "src/data/types.ts",
+    "size_bytes": 1649
+  },
+  {
+    "path": "src/data/useSource.ts",
+    "size_bytes": 3386
+  },
+  {
+    "path": "src/data/warning-codes.json",
+    "size_bytes": 3957
+  },
+  {
+    "path": "src/main.tsx",
+    "size_bytes": 200
+  },
+  {
+    "path": "src/map/mockRadar.ts",
+    "size_bytes": 1685
+  },
+  {
+    "path": "src/map/RadarPlayer.ts",
+    "size_bytes": 4088
+  },
+  {
+    "path": "src/map/radarTiles.ts",
+    "size_bytes": 1829
+  },
+  {
+    "path": "src/map/style.ts",
+    "size_bytes": 1614
+  },
+  {
+    "path": "src/map/terrain.ts",
+    "size_bytes": 1770
+  },
+  {
+    "path": "src/map/WeatherMap.tsx",
+    "size_bytes": 12749
+  },
+  {
+    "path": "src/styles.css",
+    "size_bytes": 25944
+  },
+  {
+    "path": "TECH_ARCHITECTURE.md",
+    "size_bytes": 3508
+  },
+  {
+    "path": "tests/api.test.ts",
+    "size_bytes": 3284
+  },
+  {
+    "path": "tests/data.test.ts",
+    "size_bytes": 5177
+  },
+  {
+    "path": "tests/e2e/app.spec.ts",
+    "size_bytes": 3179
+  },
+  {
+    "path": "tests/playback.test.ts",
+    "size_bytes": 4704
+  },
+  {
+    "path": "tests/radar-tiles.test.ts",
+    "size_bytes": 866
+  },
+  {
+    "path": "tsconfig.json",
+    "size_bytes": 494
+  },
+  {
+    "path": "vite.config.ts",
+    "size_bytes": 1077
+  },
+  {
+    "path": "vitest.config.ts",
+    "size_bytes": 122
+  },
+  {
+    "path": "wrangler.jsonc",
+    "size_bytes": 351
+  }
+]

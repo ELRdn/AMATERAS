@@ -1,0 +1,11 @@
+{
+  "retrievedAt": "2026-09-06T02:12:31.233Z",
+  "places": 1863,
+  "warningCodes": 33,
+  "sources": [
+    "https://www.jma.go.jp/bosai/common/const/area.json",
+    "https://www.jma.go.jp/bosai/common/const/class20relm.json",
+    "https://www.jma.go.jp/bosai/warning/",
+    "https://openfreemap.org/quick_start/"
+  ]
+}

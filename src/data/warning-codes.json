@@ -1,0 +1,200 @@
+{
+  "10": {
+    "category": "rain",
+    "level": 2,
+    "name": "レベル2 大雨注意報",
+    "shortName": "大雨"
+  },
+  "12": {
+    "category": "snow",
+    "level": 2,
+    "name": "大雪注意報",
+    "shortName": "大雪"
+  },
+  "13": {
+    "category": "wind_snow",
+    "level": 2,
+    "name": "風雪注意報",
+    "shortName": "風雪"
+  },
+  "14": {
+    "category": "thunder",
+    "level": 2,
+    "name": "雷注意報",
+    "shortName": "雷"
+  },
+  "15": {
+    "category": "wind",
+    "level": 2,
+    "name": "強風注意報",
+    "shortName": "強風"
+  },
+  "16": {
+    "category": "wave",
+    "level": 2,
+    "name": "波浪注意報",
+    "shortName": "波浪"
+  },
+  "17": {
+    "category": "snow_melting",
+    "level": 2,
+    "name": "融雪注意報",
+    "shortName": "融雪"
+  },
+  "19": {
+    "category": "tide",
+    "level": 2,
+    "name": "レベル2 高潮注意報",
+    "shortName": "高潮"
+  },
+  "20": {
+    "category": "fog",
+    "level": 2,
+    "name": "濃霧注意報",
+    "shortName": "濃霧"
+  },
+  "21": {
+    "category": "dry",
+    "level": 2,
+    "name": "乾燥注意報",
+    "shortName": "乾燥"
+  },
+  "22": {
+    "category": "avalanche",
+    "level": 2,
+    "name": "なだれ注意報",
+    "shortName": "なだれ"
+  },
+  "23": {
+    "category": "cold",
+    "level": 2,
+    "name": "低温注意報",
+    "shortName": "低温"
+  },
+  "24": {
+    "category": "frost",
+    "level": 2,
+    "name": "霜注意報",
+    "shortName": "霜"
+  },
+  "25": {
+    "category": "ice_accretion",
+    "level": 2,
+    "name": "着氷注意報",
+    "shortName": "着氷"
+  },
+  "26": {
+    "category": "snow_accretion",
+    "level": 2,
+    "name": "着雪注意報",
+    "shortName": "着雪"
+  },
+  "29": {
+    "category": "landslide",
+    "level": 2,
+    "name": "レベル2 土砂災害注意報",
+    "shortName": "土砂災害"
+  },
+  "32": {
+    "category": "wind_snow",
+    "level": 5,
+    "name": "暴風雪特別警報",
+    "shortName": "風雪"
+  },
+  "33": {
+    "category": "rain",
+    "level": 5,
+    "name": "レベル5 大雨特別警報",
+    "shortName": "大雨"
+  },
+  "35": {
+    "category": "wind",
+    "level": 5,
+    "name": "暴風特別警報",
+    "shortName": "強風"
+  },
+  "36": {
+    "category": "snow",
+    "level": 5,
+    "name": "大雪特別警報",
+    "shortName": "大雪"
+  },
+  "37": {
+    "category": "wave",
+    "level": 5,
+    "name": "波浪特別警報",
+    "shortName": "波浪"
+  },
+  "38": {
+    "category": "tide",
+    "level": 5,
+    "name": "レベル5 高潮特別警報",
+    "shortName": "高潮"
+  },
+  "39": {
+    "category": "landslide",
+    "level": 5,
+    "name": "レベル5 土砂災害特別警報",
+    "shortName": "土砂災害"
+  },
+  "43": {
+    "category": "rain",
+    "level": 4,
+    "name": "レベル4 大雨危険警報",
+    "shortName": "大雨"
+  },
+  "48": {
+    "category": "tide",
+    "level": 4,
+    "name": "レベル4 高潮危険警報",
+    "shortName": "高潮"
+  },
+  "49": {
+    "category": "landslide",
+    "level": 4,
+    "name": "レベル4 土砂災害危険警報",
+    "shortName": "土砂災害"
+  },
+  "03": {
+    "category": "rain",
+    "level": 3,
+    "name": "レベル3 大雨警報",
+    "shortName": "大雨"
+  },
+  "09": {
+    "category": "landslide",
+    "level": 3,
+    "name": "レベル3 土砂災害警報",
+    "shortName": "土砂災害"
+  },
+  "08": {
+    "category": "tide",
+    "level": 3,
+    "name": "レベル3 高潮警報",
+    "shortName": "高潮"
+  },
+  "05": {
+    "category": "wind",
+    "level": 3,
+    "name": "暴風警報",
+    "shortName": "強風"
+  },
+  "02": {
+    "category": "wind_snow",
+    "level": 3,
+    "name": "暴風雪警報",
+    "shortName": "風雪"
+  },
+  "06": {
+    "category": "snow",
+    "level": 3,
+    "name": "大雪警報",
+    "shortName": "大雪"
+  },
+  "07": {
+    "category": "wave",
+    "level": 3,
+    "name": "波浪警報",
+    "shortName": "波浪"
+  }
+}
