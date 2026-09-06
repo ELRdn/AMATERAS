@@ -1,0 +1,88 @@
+diff --git a/dist/animation-loop/animation-loop.js b/dist/animation-loop/animation-loop.js
+index 4f868a2..9a80bf8 100644
+--- a/dist/animation-loop/animation-loop.js
++++ b/dist/animation-loop/animation-loop.js
+@@ -75,6 +75,8 @@ export class AnimationLoop {
+     }
+     destroy() {
+         this.stop();
++        this.canvas?.removeEventListener('mousemove', this._onMousemove);
++        this.canvas?.removeEventListener('mouseleave', this._onMouseleave);
+         this._setDisplay(null);
+         this.device?._disableDebugGPUTime();
+     }
+@@ -463,8 +465,8 @@ export class AnimationLoop {
+     // Event handling
+     _startEventHandling() {
+         if (this.canvas) {
+-            this.canvas.addEventListener('mousemove', this._onMousemove.bind(this));
+-            this.canvas.addEventListener('mouseleave', this._onMouseleave.bind(this));
++            this.canvas.addEventListener('mousemove', this._onMousemove);
++            this.canvas.addEventListener('mouseleave', this._onMouseleave);
+         }
+     }
+     _onMousemove(event) {
+diff --git a/dist/model/model.js b/dist/model/model.js
+index ded6621..8298e29 100644
+--- a/dist/model/model.js
++++ b/dist/model/model.js
+@@ -308,6 +308,7 @@ export class Model {
+             if (this.pipeline.fs && this.pipeline.fs !== this.pipeline.vs) {
+                 this.shaderFactory.release(this.pipeline.fs);
+             }
++            this.vertexArray.destroy();
+             this._uniformStore.destroy();
+             // TODO - mark resource as managed and destroyIfManaged() ?
+             this._gpuGeometry?.destroy();
+@@ -507,6 +508,7 @@ export class Model {
+         this.pipeline = this._updatePipeline();
+         // vertex array needs to be updated if we update buffer layout,
+         // but not if we update parameters
++        this.vertexArray?.destroy();
+         this.vertexArray = this.device.createVertexArray({
+             shaderLayout: this.pipeline.shaderLayout,
+             bufferLayout: this.pipeline.bufferLayout
+diff --git a/src/animation-loop/animation-loop.ts b/src/animation-loop/animation-loop.ts
+index c96ceaa..9beca27 100644
+--- a/src/animation-loop/animation-loop.ts
++++ b/src/animation-loop/animation-loop.ts
+@@ -134,6 +134,8 @@ export class AnimationLoop {
+ 
+   destroy(): void {
+     this.stop();
++    this.canvas?.removeEventListener('mousemove', this._onMousemove);
++    this.canvas?.removeEventListener('mouseleave', this._onMouseleave);
+     this._setDisplay(null);
+     this.device?._disableDebugGPUTime();
+   }
+@@ -605,8 +607,8 @@ export class AnimationLoop {
+ 
+   _startEventHandling() {
+     if (this.canvas) {
+-      this.canvas.addEventListener('mousemove', this._onMousemove.bind(this));
+-      this.canvas.addEventListener('mouseleave', this._onMouseleave.bind(this));
++      this.canvas.addEventListener('mousemove', this._onMousemove);
++      this.canvas.addEventListener('mouseleave', this._onMouseleave);
+     }
+   }
+ 
+diff --git a/src/model/model.ts b/src/model/model.ts
+index 63df211..b4e8ad9 100644
+--- a/src/model/model.ts
++++ b/src/model/model.ts
+@@ -510,6 +510,7 @@ export class Model {
+       if (this.pipeline.fs && this.pipeline.fs !== this.pipeline.vs) {
+         this.shaderFactory.release(this.pipeline.fs);
+       }
++      this.vertexArray.destroy();
+       this._uniformStore.destroy();
+       // TODO - mark resource as managed and destroyIfManaged() ?
+       this._gpuGeometry?.destroy();
+@@ -729,6 +730,7 @@ export class Model {
+ 
+     // vertex array needs to be updated if we update buffer layout,
+     // but not if we update parameters
++    this.vertexArray?.destroy();
+     this.vertexArray = this.device.createVertexArray({
+       shaderLayout: this.pipeline.shaderLayout,
+       bufferLayout: this.pipeline.bufferLayout

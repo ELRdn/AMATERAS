@@ -1,13 +1,18 @@
 # AMATERAS — Decisions
 
-## 2026-09-06 implementation decisions (current)
+## 2026-09-07 FX-0 / FX-1 decisions (current)
 
-- React + TypeScript + Vite + MapLibre GL JS + dedicated CSS.
-- Shared local API and Cloudflare Worker; deployment is outside this delivery.
-- Live JMA observation radar (~3 hours), current r8 warnings, official area search and geometry.
-- GSI DEM terrain with 1.25x elevation, 2D/3D and mobile support are included now.
-- No Three.js, deck.gl, event models, earthquake/tsunami/typhoon layers, rivers, Kikikuru, PLATEAU, accounts or notifications in this release.
-- See PROJECT_SPEC.md and IMPLEMENTATION_REPORT.md for the implemented scope and evidence.
+- Maintain React / TypeScript / Vite / MapLibre 5.24.0; add lazy-loaded deck.gl 9.4.0 via interleaved MapLibreOverlay.
+- Default to 3D + Auto on every device. Persist manual terrain and quality choices.
+- Group warnings by area and retain the strongest official classification regardless of selection. Unknown classifications receive no invented height.
+- Sample the same GSI DEM at subdivided mesh vertices; native ground fills and outlines remain available.
+- Add official earthquakes from the last 24 hours and current typhoons from the target list and normal VPTW61 XML.
+- Selected earthquake pulses are symbolic and last up to four seconds; forecast and observed typhoon geometry remain distinct.
+- Keep radar, warnings, earthquakes and typhoons independent, including failure and partial states. Historical radar does not rewind events.
+- Low retains terrain, flat areas, outlines and static markers. Auto begins Low on small screens, Medium elsewhere, and downgrades under sustained load.
+- No wind/radar lift, Three.js, GLB, PLATEAU, SANDBOX, accounts or notifications in this phase.
+- This phase includes local operation, tests, evidence and docs; no additional commit, push or deployment.
+- The initial MVP remains the baseline. Current scope and verification: PROJECT_SPEC.md / IMPLEMENTATION_REPORT.md.
 
 ## Product name
 
@@ -102,7 +107,9 @@ Use 3D for:
 
 - terrain
 - map camera pitch
-- selected-area outlines and small labels
+- terrain-sampled warning meshes with selected-area outlines and small labels
+- symbolic selected earthquake pulses
+- official typhoon tracks and areas
 
 Do not build a fully volumetric atmosphere for MVP.
 

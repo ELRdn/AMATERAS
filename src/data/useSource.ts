@@ -106,11 +106,19 @@ export function useSource<T>(
                 ...prev,
                 health: {
                   ...prev.health,
-                  state: freshness(
-                    id,
-                    prev.health.sourceTime,
-                    prev.health.fetchedAt,
-                  ),
+                  state:
+                    prev.health.state === "PARTIAL" &&
+                    freshness(
+                      id,
+                      prev.health.sourceTime,
+                      prev.health.fetchedAt,
+                    ) === "LIVE"
+                      ? "PARTIAL"
+                      : freshness(
+                          id,
+                          prev.health.sourceTime,
+                          prev.health.fetchedAt,
+                        ),
                 },
               },
         ),

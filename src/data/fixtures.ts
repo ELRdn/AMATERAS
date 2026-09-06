@@ -16,7 +16,10 @@ export function makeRadarFixture(scenario = "rainy"): RadarFrame[] {
     };
   });
 }
-export function makeFixture(scenario: string): WarningEvent[] {
+export function makeFixture(
+  scenario: string,
+  area: string | null = null,
+): WarningEvent[] {
   if (scenario === "quiet") return [];
   const rows =
     scenario === "rainy"
@@ -31,7 +34,9 @@ export function makeFixture(scenario: string): WarningEvent[] {
           ["1220400", "14", "thunder", 2, "雷注意報"],
           ["1120100", "10", "rain", 2, "レベル2 大雨注意報"],
         ];
-  return rows.map(([areaCode, code, category, level, name]) => ({
+  const selectedRows =
+    area && /^\d{7}$/.test(area) ? [[area, ...rows[0].slice(1)]] : rows;
+  return selectedRows.map(([areaCode, code, category, level, name]) => ({
     id: `${areaCode}:${code}`,
     areaCode: String(areaCode),
     code: String(code),
@@ -52,4 +57,15 @@ export function makeFixture(scenario: string): WarningEvent[] {
     summary: "画面検証用の模擬情報です。実際の警報ではありません。",
     dataTypeCode: "MOCK",
   }));
+}
+
+export function makeStressFixture(places: { code: string }[]): WarningEvent[] {
+  const templates = makeFixture("severe");
+  return places.slice(0, 200).flatMap((p) =>
+    templates.map((t) => ({
+      ...t,
+      areaCode: p.code,
+      id: p.code + ":" + t.code,
+    })),
+  );
 }

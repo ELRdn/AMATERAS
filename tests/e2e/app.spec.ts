@@ -1,4 +1,6 @@
+import { fixtureMap } from "./fixtures";
 import { test, expect } from "@playwright/test";
+test.beforeEach(async ({ page }) => fixtureMap(page));
 test("labelled quiet state, search and modal", async ({ page }) => {
   await page.goto("/?scenario=quiet");
   await expect(page.locator(".mock-banner")).toContainText("MOCK DATA");

@@ -1,4 +1,6 @@
-export type HealthState = "LIVE" | "DELAYED" | "STALE" | "SOURCE ERROR";
+import type { Geometry } from "geojson";
+export type HealthState =
+  "LIVE" | "DELAYED" | "STALE" | "PARTIAL" | "SOURCE ERROR";
 export interface SourceHealth {
   id: string;
   label: string;
@@ -6,6 +8,7 @@ export interface SourceHealth {
   fetchedAt: string | null;
   sourceTime: string | null;
   error?: string;
+  checkedAt?: string;
 }
 export interface Envelope<T> {
   data: T;
@@ -70,3 +73,71 @@ export const dateJst = (v: string | null) =>
         minute: "2-digit",
       }).format(new Date(v))
     : "—";
+
+export type FxQuality = "auto" | "low" | "medium" | "high";
+export type EffectiveQuality = Exclude<FxQuality, "auto">;
+export interface EventSource {
+  organization: string;
+  url: string;
+  issuedAt: string;
+  observedAt: string | null;
+  fetchedAt: string;
+}
+export interface EarthquakeEvent {
+  id: string;
+  title: string;
+  occurredAt: string;
+  position: [number, number] | null;
+  depthKm: number | null;
+  magnitude: number | null;
+  maxIntensity: string | null;
+  status: "active" | "cancelled";
+  serial: number;
+  source: EventSource;
+}
+export interface TyphoonPoint {
+  time: string;
+  position: [number, number];
+  kind: "observed" | "forecast";
+  pressure: number | null;
+  wind: number | null;
+  forecastRadiusKm: number | null;
+}
+export interface TyphoonWindArea {
+  kind: "gale" | "storm";
+  center: [number, number];
+  direction: string;
+  radiusKm: number;
+  oppositeRadiusKm: number;
+}
+export interface TyphoonEvent {
+  id: string;
+  number: string;
+  name: string;
+  category: string;
+  status: "active" | "cancelled";
+  serial: number;
+  source: EventSource;
+  current: TyphoonPoint | null;
+  track: TyphoonPoint[];
+  forecast: TyphoonPoint[];
+  windAreas: TyphoonWindArea[];
+  detailState: "LIVE" | "PARTIAL";
+  detailError?: string;
+}
+export interface GeoEffect {
+  id: string;
+  kind: "warning" | "epicenter" | "pulse" | "typhoon-track" | "typhoon-area";
+  mode: "live" | "simulation" | "training";
+  source: EventSource;
+  dataSemantics:
+    | "official-observation"
+    | "official-forecast"
+    | "official-warning"
+    | "derived-visualization"
+    | "simulation";
+  heightSemantics: "terrain" | "data-value" | "visual-only";
+  meaning: string;
+  geometry: Geometry;
+  visible: boolean;
+}

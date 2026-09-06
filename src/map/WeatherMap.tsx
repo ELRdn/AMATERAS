@@ -5,13 +5,79 @@ import type { PlaceResult, RadarFrame, WarningEvent } from "../data/types";
 import { WARNING_COLORS } from "../data/types";
 import { loadStyle } from "./style";
 import { installTerrainProtocol } from "./terrain";
+import type {
+  EarthquakeEvent,
+  TyphoonEvent,
+  FxQuality,
+  EffectiveQuality,
+} from "../data/types";
+import type { FxManager } from "./fx/FxManager";
+import { groupWarnings, type WarningArea } from "./fx/geometry";
+import { QUALITY_LIMITS } from "./fx/quality";
+import { installEventLayers, setEventData } from "./fx/eventLayers";
 import { RadarPlayer } from "./RadarPlayer";
 import { installRadarProtocol } from "./radarTiles";
 const empty: FeatureCollection = { type: "FeatureCollection", features: [] };
 export type MapAction =
   | { kind: "place"; place: PlaceResult; nonce: number }
+  | { kind: "event"; bounds: [number, number, number, number]; nonce: number }
   | { kind: "reset" | "zoomIn" | "zoomOut"; nonce: number };
+function focusPadding(map: MLMap) {
+  const box = map.getContainer().getBoundingClientRect();
+  const panel = document
+    .querySelector(".app.sheet-open .warning-rail")
+    ?.getBoundingClientRect();
+  const padding = { top: 35, bottom: 65, left: 30, right: 30 };
+  if (
+    panel &&
+    panel.left < box.right &&
+    panel.right > box.left &&
+    panel.top < box.bottom
+  ) {
+    if (panel.width > box.width * 0.7)
+      padding.bottom = Math.min(box.height - 130, box.bottom - panel.top + 18);
+    else padding.right = Math.min(box.width - 130, box.right - panel.left + 18);
+  }
+  return padding;
+}
+function fitRegion(
+  map: MLMap,
+  bounds: [number, number, number, number],
+  pitch: number,
+  reduced: boolean,
+  maxZoom: number,
+) {
+  const padding = focusPadding(map);
+  const sw = maplibregl.MercatorCoordinate.fromLngLat([bounds[0], bounds[1]]);
+  const ne = maplibregl.MercatorCoordinate.fromLngLat([bounds[2], bounds[3]]);
+  const box = map.getContainer();
+  // cameraForBounds adds stored padding to requested padding. Compute the target
+  // viewport once so repeated selections cannot exhaust the mobile map height.
+  const width = Math.max(1, box.clientWidth - padding.left - padding.right);
+  const height = Math.max(1, box.clientHeight - padding.top - padding.bottom);
+  const scale = Math.min(
+    width / (512 * Math.max(1e-9, Math.abs(ne.x - sw.x))),
+    height / (512 * Math.max(1e-9, Math.abs(ne.y - sw.y))),
+  );
+  const zoom = Math.max(map.getMinZoom(), Math.min(maxZoom, Math.log2(scale)));
+  map.easeTo({
+    center: [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2],
+    zoom,
+    bearing: 0,
+    pitch,
+    padding,
+    duration: reduced ? 0 : 700,
+  });
+}
 interface Props {
+  panelOpen: boolean;
+  earthquakes: EarthquakeEvent[];
+  typhoons: TyphoonEvent[];
+  eventSelected: string | null;
+  quality: FxQuality;
+  reducedMotion: boolean;
+  onQuality: (q: EffectiveQuality) => void;
+  onEventSelect: (kind: "earthquakes" | "typhoons", id: string) => void;
   theme: "dark" | "light";
   terrain: boolean;
   radar: boolean;
@@ -19,6 +85,7 @@ interface Props {
   frame?: RadarFrame;
   nextFrame?: RadarFrame;
   warnings: WarningEvent[];
+  warningFetchedAt: string | null;
   places: PlaceResult[];
   selected: string | null;
   action: MapAction | null;
@@ -34,6 +101,14 @@ export function WeatherMap(props: Props) {
     player = useRef<RadarPlayer | null>(null),
     current = useRef(props);
   current.current = props;
+  const fx = useRef<FxManager | null>(null),
+    eventCleanup = useRef<(() => void) | null>(null);
+  const [warningAreas, setWarningAreas] = useState<WarningArea[]>([]);
+  const areasRef = useRef(warningAreas);
+  areasRef.current = warningAreas;
+  const effectiveRef = useRef<EffectiveQuality>(
+    matchMedia("(max-width:700px)").matches ? "low" : "medium",
+  );
   const [revision, setRevision] = useState(0);
   const geometryCache = useRef(new Map<string, Feature[]>());
   const [viewRevision, setViewRevision] = useState(0);
@@ -68,10 +143,12 @@ export function WeatherMap(props: Props) {
               '<a href="https://www.jma.go.jp/">気象庁</a> · <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>',
           },
           maxPitch: 65,
+          pitch: current.current.terrain ? 50 : 0,
           renderWorldCopies: false,
         });
         mapRef.current = map;
         map.on("style.load", () => {
+          eventCleanup.current?.();
           if (!map.getSource("warnings"))
             map.addSource("warnings", { type: "geojson", data: empty });
           const before = map
@@ -95,7 +172,7 @@ export function WeatherMap(props: Props) {
               type: "line",
               source: "warnings",
               paint: {
-                "line-color": ["get", "color"],
+                "line-color": ["get", "edgeColor"],
                 "line-width": ["case", ["get", "selected"], 2.5, 0.8],
                 "line-opacity": 0.85,
               },
@@ -112,6 +189,7 @@ export function WeatherMap(props: Props) {
               "text-font": ["Noto Sans Regular"],
               "text-size": 11,
               "text-padding": 12,
+              "symbol-sort-key": ["get", "priority"],
               "text-allow-overlap": false,
             },
             paint: {
@@ -120,6 +198,9 @@ export function WeatherMap(props: Props) {
               "text-halo-width": 3,
             },
           });
+          eventCleanup.current = installEventLayers(map, (kind, id) =>
+            current.current.onEventSelect(kind, id),
+          );
           player.current?.destroy();
           player.current = new RadarPlayer(map);
           setRevision((r) => r + 1);
@@ -127,6 +208,34 @@ export function WeatherMap(props: Props) {
         map.once("load", () => {
           setViewRevision((v) => v + 1);
         });
+        if (import.meta.env.DEV)
+          map.on("idle", () => {
+            const selected =
+              current.current.earthquakes.find(
+                (e) => e.id === current.current.eventSelected,
+              )?.position ??
+              current.current.typhoons.find(
+                (e) => e.id === current.current.eventSelected,
+              )?.current?.position;
+            if (selected) {
+              container.current!.dataset.selection = JSON.stringify({
+                point: map.project(selected),
+                center: map.getCenter(),
+                padding: map.getPadding(),
+                selected,
+              });
+            } else container.current!.removeAttribute("data-selection");
+            container.current!.dataset.map = JSON.stringify({
+              pitch: map.getPitch(),
+              zoom: map.getZoom(),
+              sources: Object.keys(map.getStyle().sources).length,
+              layers: map.getStyle().layers.length,
+              radarSources: Object.keys(map.getStyle().sources).filter((s) =>
+                s.startsWith("radar-"),
+              ).length,
+              terrain: !!map.getTerrain(),
+            });
+          });
         map.on("moveend", () => {
           setViewRevision((v) => v + 1);
           const c = map.getCenter();
@@ -169,22 +278,40 @@ export function WeatherMap(props: Props) {
       );
     return () => {
       dead = true;
+      eventCleanup.current?.();
+      fx.current?.destroy();
+      fx.current = null;
       player.current?.destroy();
       player.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
     };
   }, []);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && Object.values(map.getPadding()).some(Boolean)) {
+      map.easeTo({
+        padding: focusPadding(map),
+        duration: props.reducedMotion ? 0 : 250,
+      });
+    }
+  }, [props.panelOpen]);
   const lastTheme = useRef(props.theme);
   useEffect(() => {
     if (lastTheme.current === props.theme) return;
     lastTheme.current = props.theme;
+    container.current?.removeAttribute("data-map");
     let cancelled = false;
     void loadStyle(props.theme)
       .then((s) => {
         if (!cancelled) {
           player.current?.destroy();
-          mapRef.current?.setStyle(s);
+          fx.current?.destroy();
+          fx.current = null;
+          const map = mapRef.current;
+          // Dispose terrain against the old style before its source is replaced.
+          if (map?.getTerrain()) map.setTerrain(null);
+          map?.setStyle(s);
         }
       })
       .catch(() => props.onError("テーマを読み込めません"));
@@ -195,6 +322,7 @@ export function WeatherMap(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!revision || !map?.getSource("warnings")) return;
+    container.current?.removeAttribute("data-map");
     if (props.terrain) {
       if (!map.getSource("terrain"))
         map.addSource("terrain", {
@@ -226,12 +354,19 @@ export function WeatherMap(props: Props) {
         );
       map.setLayoutProperty("terrain-shading", "visibility", "visible");
       map.setTerrain({ source: "terrain", exaggeration: 1.25 });
-      map.easeTo({ pitch: 55, duration: 600 });
+      map.easeTo({
+        pitch: 50,
+        duration: current.current.reducedMotion ? 0 : 600,
+      });
     } else {
       map.setTerrain(null);
       if (map.getLayer("terrain-shading")) map.removeLayer("terrain-shading");
       if (map.getSource("terrain")) map.removeSource("terrain");
-      map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
+      map.easeTo({
+        pitch: 0,
+        bearing: 0,
+        duration: current.current.reducedMotion ? 0 : 400,
+      });
     }
   }, [props.terrain, revision]);
   useEffect(() => {
@@ -251,19 +386,23 @@ export function WeatherMap(props: Props) {
       a = props.action;
     if (!map || !a) return;
     if (a.kind === "place")
-      map.fitBounds(
-        [
-          [a.place.bounds[0], a.place.bounds[1]],
-          [a.place.bounds[2], a.place.bounds[3]],
-        ],
-        {
-          padding: 80,
-          maxZoom: 11,
-          duration: 700,
-          pitch: props.terrain ? 55 : 0,
-        },
+      fitRegion(
+        map,
+        a.place.bounds,
+        props.terrain ? 50 : 0,
+        current.current.reducedMotion,
+        11,
       );
-    else if (a.kind === "reset")
+    else if (a.kind === "event")
+      fitRegion(
+        map,
+        a.bounds,
+        props.terrain ? 50 : 0,
+        current.current.reducedMotion,
+        8,
+      );
+    else if (a.kind === "reset") {
+      map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
       map.fitBounds(
         [
           [122, 24],
@@ -273,16 +412,17 @@ export function WeatherMap(props: Props) {
           padding: { top: 55, bottom: 105, left: 35, right: 35 },
           bearing: 0,
           pitch: props.terrain ? 55 : 0,
-          duration: 700,
+          duration: current.current.reducedMotion ? 0 : 700,
         },
       );
-    else if (a.kind === "zoomIn") map.zoomIn();
+    } else if (a.kind === "zoomIn") map.zoomIn();
     else map.zoomOut();
   }, [props.action]);
   useEffect(() => {
     const map = mapRef.current;
     if (!revision || !map?.getSource("warnings")) return;
     let cancelled = false;
+    const abort = new AbortController();
     const places = new Map(props.places.map((p) => [p.code, p]));
     const bounds = map.getBounds();
     const visible = props.warnings.filter((w) => {
@@ -296,50 +436,85 @@ export function WeatherMap(props: Props) {
         ])
       );
     });
-    const byArea = new Map<string, WarningEvent>();
-    for (const w of visible) {
-      const old = byArea.get(w.areaCode);
-      if (
-        !old ||
-        w.id === props.selected ||
-        (old.id !== props.selected && old.level < w.level)
-      )
-        byArea.set(w.areaCode, w);
-    }
+    const byArea = groupWarnings(visible, props.selected);
     const render = () => {
       if (cancelled || !map.getSource("warnings")) return;
       const features: Feature[] = [],
-        labels: Feature[] = [];
-      for (const [code, w] of byArea) {
+        labels: Feature[] = [],
+        areas: WarningArea[] = [];
+      const groups = [...byArea.entries()].sort(
+        ([, a], [, b]) =>
+          Number(b.selected) - Number(a.selected) ||
+          b.warning.level - a.warning.level,
+      );
+      const limit =
+        QUALITY_LIMITS[
+          props.quality === "auto" ? effectiveRef.current : props.quality
+        ].labels;
+      for (const [code, g] of groups) {
         const raw = geometryCache.current.get(code);
         if (!raw) continue;
-        const color = WARNING_COLORS[w.level] ?? WARNING_COLORS[0],
-          selected = w.id === props.selected;
+        const w = g.warning,
+          color = WARNING_COLORS[w.level] ?? WARNING_COLORS[0],
+          selected = g.selected;
         for (const f of raw)
           features.push({
             ...f,
-            properties: { eventId: w.id, color, selected },
+            properties: {
+              edgeColor: w.level === 5 ? "#d7c0ef" : color,
+              eventId:
+                g.events.find((e) => e.id === props.selected)?.id ?? w.id,
+              color,
+              selected,
+            },
           });
         const point =
           raw[0]?.properties?.labelPoints?.[0] ?? places.get(code)?.center;
-        if (point && (map.getZoom() > 5.2 || w.level >= 3 || selected))
-          labels.push({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: point },
-            properties: {
-              label: w.shortName,
-              color: w.level === 5 ? "#f4dfff" : color,
-            },
+        if (point) {
+          areas.push({
+            code,
+            fetchedAt: props.warningFetchedAt ?? "",
+            warning: w,
+            events: g.events,
+            selected,
+            features: raw as WarningArea["features"],
+            label: point,
           });
+          if (
+            labels.length < limit &&
+            (selected ||
+              map.getZoom() >= 7 ||
+              (map.getZoom() >= 5.5 && w.level >= 3) ||
+              w.level >= 4)
+          )
+            labels.push({
+              type: "Feature",
+              geometry: { type: "Point", coordinates: point },
+              properties: {
+                label:
+                  w.shortName +
+                  (g.events.length > 1 ? " +" + (g.events.length - 1) : ""),
+                color: w.level === 5 ? "#f4dfff" : color,
+                priority: selected ? 0 : 6 - w.level,
+              },
+            });
+        }
       }
       (map.getSource("warnings") as GeoJSONSource).setData({
         type: "FeatureCollection",
         features,
       });
-      (map.getSource("warning-labels") as GeoJSONSource)?.setData({
+      (map.getSource("warning-labels") as GeoJSONSource).setData({
         type: "FeatureCollection",
         features: labels,
       });
+      if (import.meta.env.DEV)
+        container.current!.dataset.areas = JSON.stringify({
+          areas: areas.length,
+          labels: labels.length,
+          cache: geometryCache.current.size,
+        });
+      setWarningAreas(areas);
     };
     render();
     const queue = [...byArea.keys()].filter(
@@ -349,15 +524,24 @@ export function WeatherMap(props: Props) {
       while (queue.length && !cancelled) {
         const code = queue.shift()!;
         try {
-          const r = await fetch("/api/areas/" + code);
+          const r = await fetch("/api/areas/" + code, { signal: abort.signal });
           if (!r.ok) throw new Error();
           const data = (await r.json()) as FeatureCollection;
           if (
             data.type !== "FeatureCollection" ||
-            !data.features.every((f) => f.properties?.code === code)
+            !data.features.length ||
+            !data.features.every(
+              (f) =>
+                f.properties?.code === code &&
+                ["Polygon", "MultiPolygon"].includes(f.geometry.type),
+            )
           )
             throw new Error();
           geometryCache.current.set(code, data.features);
+          if (geometryCache.current.size > 500)
+            geometryCache.current.delete(
+              geometryCache.current.keys().next().value!,
+            );
           render();
         } catch {
           if (!cancelled)
@@ -370,14 +554,90 @@ export function WeatherMap(props: Props) {
     void Promise.all(Array.from({ length: 4 }, worker));
     return () => {
       cancelled = true;
+      abort.abort();
     };
-  }, [props.warnings, props.places, props.selected, revision, viewRevision]);
+  }, [
+    props.warnings,
+    props.places,
+    props.selected,
+    props.quality,
+    revision,
+    viewRevision,
+  ]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !revision) return;
+    setEventData(map, props.earthquakes, props.typhoons, props.eventSelected);
+  }, [
+    props.earthquakes,
+    props.typhoons,
+    props.eventSelected,
+    revision,
+    viewRevision,
+  ]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !revision || !props.terrain) {
+      fx.current?.destroy();
+      fx.current = null;
+      return;
+    }
+    let cancelled = false;
+    void import("./fx/FxManager")
+      .then(({ FxManager }) => {
+        if (cancelled || !map.getSource("warnings")) return;
+        fx.current = new FxManager(
+          map,
+          (s) => current.current.onError(s),
+          (q) => {
+            effectiveRef.current = q;
+            current.current.onQuality(q);
+          },
+        );
+        fx.current.update({
+          areas: areasRef.current,
+          earthquakes: current.current.earthquakes,
+          selected: current.current.eventSelected,
+          terrain: current.current.terrain,
+          quality: current.current.quality,
+          reducedMotion: current.current.reducedMotion,
+        });
+      })
+      .catch(() =>
+        current.current.onError(
+          "立体エフェクトを読み込めません。地図と区域の表示は継続しています。",
+        ),
+      );
+    return () => {
+      cancelled = true;
+      fx.current?.destroy();
+      fx.current = null;
+    };
+  }, [revision, props.terrain]);
+  useEffect(() => {
+    fx.current?.update({
+      areas: warningAreas,
+      earthquakes: props.earthquakes,
+      selected: props.eventSelected,
+      terrain: props.terrain,
+      quality: props.quality,
+      reducedMotion: props.reducedMotion,
+    });
+  }, [
+    warningAreas,
+    props.earthquakes,
+    props.eventSelected,
+    props.terrain,
+    props.quality,
+    props.reducedMotion,
+  ]);
   return (
     <div
       className="map-canvas"
       ref={container}
       aria-label="日本全国の気象地図"
       data-testid="weather-map"
+      data-mode={props.terrain ? "3d" : "2d"}
     />
   );
 }

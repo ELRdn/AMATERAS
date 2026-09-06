@@ -5,11 +5,15 @@
   },
   {
     "path": "ACCEPTANCE_CRITERIA.md",
-    "size_bytes": 2551
+    "size_bytes": 2720
+  },
+  {
+    "path": "AMATERAS_3D_EFFECTS_SPEC.md",
+    "size_bytes": 35039
   },
   {
     "path": "ASTRA_IMPLEMENTATION_PROMPT.md",
-    "size_bytes": 1149
+    "size_bytes": 1543
   },
   {
     "path": "BRAND.md",
@@ -17,43 +21,63 @@
   },
   {
     "path": "DATA_SOURCES.md",
-    "size_bytes": 6361
+    "size_bytes": 10099
   },
   {
     "path": "DECISIONS.md",
-    "size_bytes": 3096
+    "size_bytes": 3963
   },
   {
     "path": "DESIGN.md",
-    "size_bytes": 4788
+    "size_bytes": 5553
   },
   {
     "path": "IMPLEMENTATION_REPORT.md",
-    "size_bytes": 6528
+    "size_bytes": 12101
+  },
+  {
+    "path": "MVP_ROADMAP.md",
+    "size_bytes": 1884
+  },
+  {
+    "path": "PROJECT_SPEC.md",
+    "size_bytes": 4324
+  },
+  {
+    "path": "README.md",
+    "size_bytes": 6015
+  },
+  {
+    "path": "REFERENCE_UI_ANALYSIS.md",
+    "size_bytes": 11750
+  },
+  {
+    "path": "TECH_ARCHITECTURE.md",
+    "size_bytes": 8386
   },
   {
     "path": "index.html",
     "size_bytes": 635
   },
   {
-    "path": "MVP_ROADMAP.md",
-    "size_bytes": 1380
+    "path": "package.json",
+    "size_bytes": 1489
   },
   {
-    "path": "package.json",
-    "size_bytes": 1081
+    "path": "patches/@luma.gl__engine@9.4.0.patch",
+    "size_bytes": 3746
+  },
+  {
+    "path": "patches/README.md",
+    "size_bytes": 1562
   },
   {
     "path": "playwright.config.ts",
-    "size_bytes": 520
+    "size_bytes": 1222
   },
   {
     "path": "pnpm-lock.yaml",
-    "size_bytes": 82536
-  },
-  {
-    "path": "PROJECT_SPEC.md",
-    "size_bytes": 2506
+    "size_bytes": 98642
   },
   {
     "path": "public/data/places.json",
@@ -76,14 +100,6 @@
     "size_bytes": 280
   },
   {
-    "path": "README.md",
-    "size_bytes": 3932
-  },
-  {
-    "path": "REFERENCE_UI_ANALYSIS.md",
-    "size_bytes": 11750
-  },
-  {
     "path": "references/palette_A_cyber_radar.png",
     "size_bytes": 1705618
   },
@@ -104,8 +120,16 @@
     "size_bytes": 3354
   },
   {
+    "path": "scripts/capture-fx.mjs",
+    "size_bytes": 4788
+  },
+  {
     "path": "scripts/inspect-sources.mjs",
     "size_bytes": 930
+  },
+  {
+    "path": "scripts/measure-fx.mjs",
+    "size_bytes": 6651
   },
   {
     "path": "scripts/probe-r8.mjs",
@@ -113,15 +137,23 @@
   },
   {
     "path": "scripts/smoke-live.mjs",
-    "size_bytes": 1911
+    "size_bytes": 2440
   },
   {
     "path": "scripts/sync-static.mjs",
     "size_bytes": 3935
   },
   {
+    "path": "scripts/verify-live-browser.mjs",
+    "size_bytes": 2613
+  },
+  {
     "path": "server/api.ts",
-    "size_bytes": 6723
+    "size_bytes": 7062
+  },
+  {
+    "path": "server/events.ts",
+    "size_bytes": 11755
   },
   {
     "path": "server/worker.ts",
@@ -129,15 +161,27 @@
   },
   {
     "path": "src/App.tsx",
-    "size_bytes": 31821
+    "size_bytes": 41662
+  },
+  {
+    "path": "src/components/EventList.tsx",
+    "size_bytes": 6732
   },
   {
     "path": "src/components/Modal.tsx",
     "size_bytes": 895
   },
   {
+    "path": "src/data/eventFixtures.ts",
+    "size_bytes": 2531
+  },
+  {
+    "path": "src/data/events.ts",
+    "size_bytes": 11149
+  },
+  {
     "path": "src/data/fixtures.ts",
-    "size_bytes": 1907
+    "size_bytes": 2328
   },
   {
     "path": "src/data/normalize.ts",
@@ -145,11 +189,11 @@
   },
   {
     "path": "src/data/types.ts",
-    "size_bytes": 1649
+    "size_bytes": 3445
   },
   {
     "path": "src/data/useSource.ts",
-    "size_bytes": 3386
+    "size_bytes": 3704
   },
   {
     "path": "src/data/warning-codes.json",
@@ -160,12 +204,36 @@
     "size_bytes": 200
   },
   {
-    "path": "src/map/mockRadar.ts",
-    "size_bytes": 1685
-  },
-  {
     "path": "src/map/RadarPlayer.ts",
     "size_bytes": 4088
+  },
+  {
+    "path": "src/map/WeatherMap.tsx",
+    "size_bytes": 21481
+  },
+  {
+    "path": "src/map/fx/FxManager.ts",
+    "size_bytes": 10227
+  },
+  {
+    "path": "src/map/fx/eventLayers.ts",
+    "size_bytes": 5951
+  },
+  {
+    "path": "src/map/fx/geometry.ts",
+    "size_bytes": 7268
+  },
+  {
+    "path": "src/map/fx/quality.ts",
+    "size_bytes": 840
+  },
+  {
+    "path": "src/map/fx/useFxSettings.ts",
+    "size_bytes": 1423
+  },
+  {
+    "path": "src/map/mockRadar.ts",
+    "size_bytes": 1685
   },
   {
     "path": "src/map/radarTiles.ts",
@@ -173,23 +241,15 @@
   },
   {
     "path": "src/map/style.ts",
-    "size_bytes": 1614
+    "size_bytes": 1743
   },
   {
     "path": "src/map/terrain.ts",
-    "size_bytes": 1770
-  },
-  {
-    "path": "src/map/WeatherMap.tsx",
-    "size_bytes": 12749
+    "size_bytes": 2908
   },
   {
     "path": "src/styles.css",
-    "size_bytes": 25944
-  },
-  {
-    "path": "TECH_ARCHITECTURE.md",
-    "size_bytes": 3508
+    "size_bytes": 29672
   },
   {
     "path": "tests/api.test.ts",
@@ -201,7 +261,31 @@
   },
   {
     "path": "tests/e2e/app.spec.ts",
-    "size_bytes": 3179
+    "size_bytes": 3275
+  },
+  {
+    "path": "tests/e2e/fixtures.ts",
+    "size_bytes": 3048
+  },
+  {
+    "path": "tests/e2e/fx.spec.ts",
+    "size_bytes": 8435
+  },
+  {
+    "path": "tests/events.test.ts",
+    "size_bytes": 12079
+  },
+  {
+    "path": "tests/fixtures/earthquake-jma.json",
+    "size_bytes": 13165
+  },
+  {
+    "path": "tests/fixtures/typhoon-vptw61.xml",
+    "size_bytes": 13703
+  },
+  {
+    "path": "tests/fx.test.ts",
+    "size_bytes": 4507
   },
   {
     "path": "tests/playback.test.ts",
@@ -210,6 +294,10 @@
   {
     "path": "tests/radar-tiles.test.ts",
     "size_bytes": 866
+  },
+  {
+    "path": "tests/terrain-fallback.test.ts",
+    "size_bytes": 1833
   },
   {
     "path": "tsconfig.json",

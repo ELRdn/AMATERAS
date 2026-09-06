@@ -1501,3 +1501,218 @@ body,
     scroll-behavior: auto !important;
   }
 }
+
+/* FX-0/1 uses the existing instrument palette and rail proportions. */
+.event-tabs {
+  display: flex;
+  margin: 14px 18px 0;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.event-tabs button {
+  flex: 1;
+  padding: 10px 2px;
+  min-height: 42px;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.event-tabs [aria-selected="true"] {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.event-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.event-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px;
+}
+.event-summary > strong {
+  font:
+    38px Bahnschrift,
+    Consolas,
+    monospace;
+}
+.event-summary > span {
+  font-size: 12px;
+}
+.event-summary small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.event-card {
+  border-bottom: 1px solid var(--line);
+  border-left: 2px solid transparent;
+}
+.event-card.selected {
+  border-left-color: var(--amber);
+  background: #ffb02008;
+}
+.typhoon-card.selected {
+  border-left-color: var(--cyan);
+  background: #00d9ff08;
+}
+.event-select {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 14px;
+  padding: 18px 16px;
+  min-height: 70px;
+}
+.event-select > span:last-child {
+  min-width: 0;
+}
+.event-select strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.event-select small {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.event-value {
+  min-width: 45px;
+  color: var(--amber);
+  font-size: 10px;
+}
+.typhoon-card .event-value {
+  color: var(--cyan);
+}
+.event-value b {
+  font:
+    26px Bahnschrift,
+    Consolas,
+    monospace;
+}
+.event-detail {
+  padding: 0 16px 14px;
+  font-size: 11px;
+  line-height: 1.9;
+  color: #bdccda;
+}
+.event-source {
+  color: var(--muted);
+  font-size: 10px;
+}
+.event-source a {
+  color: var(--cyan);
+}
+.event-source-error {
+  margin: 0;
+  padding: 8px 18px;
+  color: var(--amber);
+  font-size: 10px;
+  line-height: 1.8;
+  flex-shrink: 0;
+}
+.forecast-list {
+  padding: 0;
+  list-style: none;
+}
+.forecast-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+}
+.fx-status {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  text-align: right;
+  pointer-events: none;
+  max-width: 46%;
+  text-shadow: 0 1px 4px #071425;
+  z-index: 2;
+  color: #a6c0cd;
+}
+.fx-status > span {
+  font:
+    10px Consolas,
+    monospace;
+  letter-spacing: 1px;
+}
+.fx-status small {
+  display: block;
+  font-size: 9px;
+  margin-top: 4px;
+}
+.setting-row select {
+  background: #142b3e;
+  color: #e6eff7;
+  padding: 8px;
+  border: 1px solid #375067;
+  border-radius: 4px;
+}
+select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+.light .event-detail {
+  color: #3d5266;
+}
+.light .fx-status {
+  color: #3d5266;
+  text-shadow: 0 1px 3px #fff;
+}
+.light .setting-row select {
+  color: #16283b;
+  background: #fff;
+}
+@media (max-width: 700px) {
+  .event-tabs {
+    margin: 8px 16px 0;
+  }
+  .event-tabs button {
+    min-height: 44px;
+  }
+  .event-summary {
+    padding: 10px 18px;
+  }
+  .event-summary > strong {
+    font-size: 26px;
+  }
+  .fx-status {
+    top: 16px;
+    right: 12px;
+    max-width: 48%;
+  }
+  .fx-status > span {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  .fx-status small {
+    font-size: 8px;
+    max-width: 145px;
+    line-height: 1.6;
+  }
+  .event-select {
+    min-height: 70px;
+  }
+  .rail-header {
+    padding-top: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

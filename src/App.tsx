@@ -28,9 +28,22 @@ import {
   Clock3,
 } from "lucide-react";
 import { WeatherMap, type MapAction } from "./map/WeatherMap";
+import { EventList } from "./components/EventList";
+import { makeEventFixture } from "./data/eventFixtures";
+import {
+  initialTerrain,
+  storeTerrain,
+  useFxSettings,
+} from "./map/fx/useFxSettings";
+import { circle, windRing, warningMeaning } from "./map/fx/geometry";
+import type { EarthquakeEvent, TyphoonEvent } from "./data/types";
 import { Modal } from "./components/Modal";
 import { useSource } from "./data/useSource";
-import { makeFixture, makeRadarFixture } from "./data/fixtures";
+import {
+  makeFixture,
+  makeRadarFixture,
+  makeStressFixture,
+} from "./data/fixtures";
 import {
   dateJst,
   timeJst,
@@ -50,9 +63,12 @@ const scenario = import.meta.env.DEV
   : null;
 const fixture =
   scenario && ["quiet", "rainy", "severe"].includes(scenario)
-    ? makeFixture(scenario)
+    ? makeFixture(scenario, new URLSearchParams(location.search).get("area"))
     : undefined;
 const fixtureFrames = fixture ? makeRadarFixture(scenario!) : undefined;
+const eventFixture = fixture ? makeEventFixture(scenario!) : undefined;
+const emptyQuakes: EarthquakeEvent[] = [],
+  emptyTyphoons: TyphoonEvent[] = [];
 const emptyWarnings: WarningEvent[] = [],
   emptyFrames: RadarFrame[] = [];
 function App() {
@@ -66,9 +82,22 @@ function App() {
     return () => media.removeEventListener("change", changed);
   }, []);
   const [theme, setTheme] = useState<"dark" | "light">("dark"),
-    [terrain, setTerrain] = useState(false),
+    [terrain, setTerrain] = useState(initialTerrain),
     [radarVisible, setRadarVisible] = useState(scenario !== "quiet"),
     [opacity, setOpacity] = useState(0.72);
+  const { quality, setQuality, effective, setEffective, reducedMotion } =
+    useFxSettings();
+  const [tab, setTab] = useState<"warnings" | "earthquakes" | "typhoons">(
+    "warnings",
+  );
+  const [eventSelected, setEventSelected] = useState<string | null>(null);
+  const [warningsVisible, setWarningsVisible] = useState(true),
+    [quakesVisible, setQuakesVisible] = useState(true),
+    [typhoonsVisible, setTyphoonsVisible] = useState(true);
+  function changeTerrain(v: boolean) {
+    setTerrain(v);
+    storeTerrain(v);
+  }
   const [places, setPlaces] = useState<PlaceResult[]>([]),
     [query, setQuery] = useState(""),
     [searchOpen, setSearchOpen] = useState(false),
@@ -89,13 +118,54 @@ function App() {
     [mapError, setMapError] = useState(""),
     [camera, setCamera] = useState("JAPAN / 全国"),
     [now, setNow] = useState(new Date().toISOString());
+  const warningFixture = useMemo(
+    () =>
+      import.meta.env.DEV &&
+      scenario === "severe" &&
+      new URLSearchParams(location.search).get("density") === "1000" &&
+      places.length
+        ? makeStressFixture(places)
+        : fixture,
+    [places],
+  );
   const rain = useSource("radar", "雨雲レーダー", emptyFrames, fixtureFrames),
     warnings = useSource(
       "warnings",
       "気象警報・注意報",
       emptyWarnings,
-      fixture,
+      warningFixture,
     );
+  const earthquakes = useSource(
+    "earthquakes",
+    "地震情報",
+    emptyQuakes,
+    eventFixture?.earthquakes,
+  );
+  const typhoons = useSource(
+    "typhoons",
+    "台風情報",
+    emptyTyphoons,
+    eventFixture?.typhoons,
+  );
+  const currentQuakes = useMemo(
+    () =>
+      earthquakes.data.filter(
+        (e) =>
+          e.status === "active" &&
+          Date.parse(now) - Date.parse(e.occurredAt) <= 86400000,
+      ),
+    [earthquakes.data, Math.floor(Date.parse(now) / 60000)],
+  );
+  const currentTyphoons = useMemo(
+    () => typhoons.data.filter((e) => e.status === "active"),
+    [typhoons.data],
+  );
+  const healthSources = [
+    rain.health,
+    warnings.health,
+    earthquakes.health,
+    typhoons.health,
+  ];
   const placeMap = useMemo(
     () => new Map(places.map((p) => [p.code, p])),
     [places],
@@ -175,9 +245,49 @@ function App() {
   }
   function selectWarning(id: string) {
     setSelected(id);
+    setEventSelected(null);
+    setTab("warnings");
     const w = warnings.data.find((w) => w.id === id),
       p = w && placeMap.get(w.areaCode);
     if (p) setAction({ kind: "place", place: p, nonce: Date.now() });
+  }
+
+  function selectEvent(kind: "earthquakes" | "typhoons", id: string) {
+    setTab(kind);
+    setSelected(null);
+    setEventSelected(id);
+    let points: number[][] = [];
+    if (kind === "earthquakes") {
+      const e = currentQuakes.find((e) => e.id === id);
+      if (e?.position)
+        points = [
+          [e.position[0] - 0.8, e.position[1] - 0.6],
+          [e.position[0] + 0.8, e.position[1] + 0.6],
+        ];
+    } else {
+      const e = currentTyphoons.find((e) => e.id === id);
+      if (e?.current)
+        points = [
+          e.current.position,
+          ...e.forecast.map((f) => f.position),
+          ...e.windAreas.flatMap((w) => windRing(w) ?? []),
+          ...e.forecast.flatMap((f) =>
+            f.forecastRadiusKm ? circle(f.position, f.forecastRadiusKm) : [],
+          ),
+        ];
+    }
+    if (points.length) {
+      setAction({
+        kind: "event",
+        bounds: [
+          Math.min(...points.map((p) => p[0])),
+          Math.min(...points.map((p) => p[1])),
+          Math.max(...points.map((p) => p[0])),
+          Math.max(...points.map((p) => p[1])),
+        ],
+        nonce: Date.now(),
+      });
+    }
   }
   function chooseFrame(id: string) {
     setRequested(id);
@@ -188,11 +298,12 @@ function App() {
     setRequested(null);
     setPlaying(false);
   }
-  const allHealthy =
-    rain.health.state === "LIVE" && warnings.health.state === "LIVE";
+  const allHealthy = healthSources.every((h) => h.state === "LIVE");
   const refresh = () => {
     void rain.refresh();
     void warnings.refresh();
+    void earthquakes.refresh();
+    void typhoons.refresh();
     setMapError("");
   };
   return (
@@ -302,13 +413,22 @@ function App() {
       </header>
       <section className="map-stage">
         <WeatherMap
+          panelOpen={sheet}
+          earthquakes={quakesVisible ? currentQuakes : emptyQuakes}
+          typhoons={typhoonsVisible ? currentTyphoons : emptyTyphoons}
+          eventSelected={eventSelected}
+          onEventSelect={selectEvent}
+          quality={quality}
+          reducedMotion={reducedMotion}
+          onQuality={setEffective}
           theme={theme}
           terrain={terrain}
           radar={radarVisible}
           opacity={opacity}
           frame={frame}
           nextFrame={nextFrame}
-          warnings={shown}
+          warningFetchedAt={warnings.health.fetchedAt}
+          warnings={warningsVisible ? shown : emptyWarnings}
           places={places}
           selected={selected}
           action={action}
@@ -319,7 +439,7 @@ function App() {
           }}
           onError={(s) => {
             setMapError(s);
-            setPlaying(false);
+            if (!s.startsWith("立体")) setPlaying(false);
           }}
           onTerrainError={() => {
             setTerrain(false);
@@ -327,6 +447,22 @@ function App() {
           }}
           onCamera={setCamera}
         />
+        <div className="fx-status">
+          <span>
+            {terrain ? "3D TERRAIN" : "2D MAP"} ·{" "}
+            {quality === "auto"
+              ? "AUTO / " + effective.toUpperCase()
+              : quality.toUpperCase()}
+          </span>
+          {terrain && (
+            <small>
+              {(quality === "auto" ? effective : quality) === "low"
+                ? "警報区域：面と輪郭"
+                : "高さ＝警報分類の強調"}
+            </small>
+          )}
+          <small>警報・台風：最新取得 / 地震：24時間</small>
+        </div>
         <div className="map-heading">
           <span className="crosshair" />
           日本全国<small>WEATHER OBSERVATION</small>
@@ -473,8 +609,14 @@ function App() {
       >
         <header className="rail-header">
           <div>
-            <span className="eyebrow">ACTIVE WARNINGS</span>
-            <h1>発表中の情報</h1>
+            <span className="eyebrow">LIVE EVENTS / JAPAN</span>
+            <h1>
+              {tab === "warnings"
+                ? "発表中の情報"
+                : tab === "earthquakes"
+                  ? "最近の地震"
+                  : "台風の実況・予報"}
+            </h1>
           </div>
           <button
             className="rail-close icon-button"
@@ -484,140 +626,198 @@ function App() {
             <X size={17} />
           </button>
         </header>
-        <div className="rail-summary">
-          <strong>
-            {warnings.health.fetchedAt ? warnings.data.length : "—"}
-            <small>件</small>
-          </strong>
-          <div>
-            <span className={serious.length ? "warning-text" : ""}>
-              {serious.length ? `警報以上 ${serious.length}件` : "警報・注意報"}
-            </span>
-            <small>区域・種別ごとに集計</small>
-          </div>
-        </div>
-        <div className="warning-filters" aria-label="警報の絞り込み">
-          <button
-            className={filter === "all" ? "active" : ""}
-            onClick={() => setFilter("all")}
-          >
-            すべて
-          </button>
-          {categories.map((c) => (
+        <div className="event-tabs" role="tablist" aria-label="情報の種類">
+          {(["warnings", "earthquakes", "typhoons"] as const).map((t, i) => (
             <button
-              key={c.id}
-              className={filter === c.id ? "active" : ""}
-              onClick={() => setFilter(c.id)}
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              aria-controls="event-panel"
+              id={"tab-" + t}
+              tabIndex={tab === t ? 0 : -1}
+              onClick={() => setTab(t)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  const options = [
+                    "warnings",
+                    "earthquakes",
+                    "typhoons",
+                  ] as const;
+                  const next =
+                    options[(i + (e.key === "ArrowRight" ? 1 : 2)) % 3];
+                  setTab(next);
+                  document.getElementById("tab-" + next)?.focus();
+                }
+              }}
             >
-              {c.name}
+              {["気象警報", "地震", "台風"][i]}
             </button>
           ))}
-          {unknownCategories && (
-            <button
-              className={filter === "other" ? "active" : ""}
-              onClick={() => setFilter("other")}
-            >
-              その他
-            </button>
-          )}
         </div>
-        <div className="rail-source">
-          <span
-            className={`status-dot ${warnings.health.state !== "LIVE" ? "amber" : ""}`}
-          />
-          {warnings.loading && !warnings.health.fetchedAt
-            ? "気象庁データを取得中"
-            : warnings.health.state === "LIVE"
-              ? `取得 ${timeJst(warnings.health.fetchedAt)} JST`
-              : `${warnings.health.state} / 最終取得 ${timeJst(warnings.health.fetchedAt)}`}
-          <button
-            aria-label="データの状態と出典"
-            onClick={() => setModal("sources")}
-          >
-            <Info size={12} />
-          </button>
-        </div>
-        <div className="warning-list">
-          {shown.slice(0, listLimit).map((w) => {
-            const p = placeMap.get(w.areaCode),
-              Icon =
-                categories.find((c) => c.id === w.category)?.icon ??
-                TriangleAlert;
-            return (
-              <button
-                className={`warning-row ${selected === w.id ? "selected" : ""}`}
-                style={
-                  {
-                    "--severity":
-                      w.level === 5
-                        ? "#ead2ff"
-                        : (WARNING_COLORS[w.level] ?? "#94a3b8"),
-                  } as React.CSSProperties
-                }
-                key={w.id}
-                onClick={() => selectWarning(w.id)}
-              >
-                <div className="row-icon">
-                  <Icon size={16} />
-                </div>
-                <div className="row-copy">
-                  <div className="row-name">
-                    {w.name}
-                    <ChevronRight size={12} />
-                  </div>
-                  <span className="row-place">
-                    {p?.prefecture} {p?.name ?? `区域 ${w.areaCode}`}
+        <div
+          className="event-panel"
+          id="event-panel"
+          role="tabpanel"
+          aria-labelledby={"tab-" + tab}
+        >
+          {tab === "warnings" ? (
+            <>
+              {" "}
+              <div className="rail-summary">
+                <strong>
+                  {warnings.health.fetchedAt ? warnings.data.length : "—"}
+                  <small>件</small>
+                </strong>
+                <div>
+                  <span className={serious.length ? "warning-text" : ""}>
+                    {serious.length
+                      ? `警報以上 ${serious.length}件`
+                      : "警報・注意報"}
                   </span>
-                  <small>{dateJst(w.reportTime)} 発表</small>
-                  {selected === w.id && (
-                    <div className="row-detail">
-                      {w.summary}
-                      <span>{w.source}</span>
-                      {!p && <span>区域図形の対応未確認</span>}
-                    </div>
-                  )}
+                  <small>区域・種別ごとに集計</small>
                 </div>
-              </button>
-            );
-          })}
-          {shown.length > listLimit && (
-            <button
-              className="load-more"
-              onClick={() => setListLimit((n) => n + 80)}
-            >
-              続きを表示（残り{shown.length - listLimit}件）
-            </button>
+              </div>
+              <div className="warning-filters" aria-label="警報の絞り込み">
+                <button
+                  className={filter === "all" ? "active" : ""}
+                  onClick={() => setFilter("all")}
+                >
+                  すべて
+                </button>
+                {categories.map((c) => (
+                  <button
+                    key={c.id}
+                    className={filter === c.id ? "active" : ""}
+                    onClick={() => setFilter(c.id)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+                {unknownCategories && (
+                  <button
+                    className={filter === "other" ? "active" : ""}
+                    onClick={() => setFilter("other")}
+                  >
+                    その他
+                  </button>
+                )}
+              </div>
+              <div className="rail-source">
+                <span
+                  className={`status-dot ${warnings.health.state !== "LIVE" ? "amber" : ""}`}
+                />
+                {warnings.loading && !warnings.health.fetchedAt
+                  ? "気象庁データを取得中"
+                  : warnings.health.state === "LIVE"
+                    ? `取得 ${timeJst(warnings.health.fetchedAt)} JST`
+                    : `${warnings.health.state} / 最終取得 ${timeJst(warnings.health.fetchedAt)}`}
+                <button
+                  aria-label="データの状態と出典"
+                  onClick={() => setModal("sources")}
+                >
+                  <Info size={12} />
+                </button>
+              </div>
+              <div className="warning-list">
+                {shown.slice(0, listLimit).map((w) => {
+                  const p = placeMap.get(w.areaCode),
+                    Icon =
+                      categories.find((c) => c.id === w.category)?.icon ??
+                      TriangleAlert;
+                  return (
+                    <button
+                      className={`warning-row ${selected === w.id ? "selected" : ""}`}
+                      style={
+                        {
+                          "--severity":
+                            w.level === 5
+                              ? "#ead2ff"
+                              : (WARNING_COLORS[w.level] ?? "#94a3b8"),
+                        } as React.CSSProperties
+                      }
+                      key={w.id}
+                      onClick={() => selectWarning(w.id)}
+                    >
+                      <div className="row-icon">
+                        <Icon size={16} />
+                      </div>
+                      <div className="row-copy">
+                        <div className="row-name">
+                          {w.name}
+                          <ChevronRight size={12} />
+                        </div>
+                        <span className="row-place">
+                          {p?.prefecture} {p?.name ?? `区域 ${w.areaCode}`}
+                        </span>
+                        <small>{dateJst(w.reportTime)} 発表</small>
+                        {selected === w.id && (
+                          <div className="row-detail">
+                            {w.summary}
+                            <span>{w.source}</span>
+                            <span>{warningMeaning(w)}</span>
+                            {!p && <span>区域図形の対応未確認</span>}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+                {shown.length > listLimit && (
+                  <button
+                    className="load-more"
+                    onClick={() => setListLimit((n) => n + 80)}
+                  >
+                    続きを表示（残り{shown.length - listLimit}件）
+                  </button>
+                )}
+                {!warnings.health.fetchedAt ? (
+                  <div className="empty-state">
+                    <Radio size={26} />
+                    <h2>
+                      {warnings.loading
+                        ? "情報を取得しています"
+                        : "警報情報を取得できません"}
+                    </h2>
+                    <p>
+                      {warnings.loading
+                        ? "気象庁の最新データを確認しています。"
+                        : "発表状況は不明です。時間をおいて更新してください。"}
+                    </p>
+                  </div>
+                ) : !shown.length ? (
+                  <div className="empty-state">
+                    <Check size={27} />
+                    <h2>
+                      {filter === "all"
+                        ? "現在、発表中の情報はありません"
+                        : "該当する情報はありません"}
+                    </h2>
+                    <p>
+                      {warnings.health.state === "LIVE"
+                        ? "最新の取得データを確認しました。"
+                        : "最終取得時点の情報です。現在の状況は確認できていません。"}
+                    </p>
+                    <span>空の変化を、地図から。</span>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <EventList
+              kind={tab}
+              earthquakes={currentQuakes}
+              typhoons={currentTyphoons}
+              health={
+                tab === "earthquakes" ? earthquakes.health : typhoons.health
+              }
+              loading={
+                tab === "earthquakes" ? earthquakes.loading : typhoons.loading
+              }
+              selected={eventSelected}
+              onSelect={(id) => selectEvent(tab, id)}
+            />
           )}
-          {!warnings.health.fetchedAt ? (
-            <div className="empty-state">
-              <Radio size={26} />
-              <h2>
-                {warnings.loading
-                  ? "情報を取得しています"
-                  : "警報情報を取得できません"}
-              </h2>
-              <p>
-                {warnings.loading
-                  ? "気象庁の最新データを確認しています。"
-                  : "発表状況は不明です。時間をおいて更新してください。"}
-              </p>
-            </div>
-          ) : !shown.length ? (
-            <div className="empty-state">
-              <Check size={27} />
-              <h2>
-                {filter === "all"
-                  ? "現在、発表中の情報はありません"
-                  : "該当する情報はありません"}
-              </h2>
-              <p>
-                {warnings.health.state === "LIVE"
-                  ? "最新の取得データを確認しました。"
-                  : "最終取得時点の情報です。現在の状況は確認できていません。"}
-              </p>
-              <span>空の変化を、地図から。</span>
-            </div>
-          ) : null}
         </div>
         <div className="rail-legend">
           <div>
@@ -638,7 +838,7 @@ function App() {
             <span>50</span>
             <span>80+</span>
           </div>
-          <p>注意報の区域は拡大すると表示されます</p>
+          <p>立体の高さは警報分類の強調です</p>
         </div>
       </aside>
       <nav className="bottom-toolbar" aria-label="地図ツール">
@@ -648,7 +848,7 @@ function App() {
         </button>
         <button
           aria-pressed={terrain}
-          onClick={() => setTerrain(!terrain)}
+          onClick={() => changeTerrain(!terrain)}
           className={terrain ? "active" : ""}
         >
           <Mountain size={14} />
@@ -780,7 +980,7 @@ function App() {
                 <input
                   type="checkbox"
                   checked={terrain}
-                  onChange={(e) => setTerrain(e.target.checked)}
+                  onChange={(e) => changeTerrain(e.target.checked)}
                 />
               </label>
               <label className="setting-row">
@@ -793,6 +993,57 @@ function App() {
                   }
                 />
               </label>
+
+              <label className="setting-row">
+                立体表現の品質
+                <select
+                  aria-label="立体表現の品質"
+                  value={quality}
+                  onChange={(e) => setQuality(e.target.value as typeof quality)}
+                >
+                  {["auto", "low", "medium", "high"].map((q) => (
+                    <option key={q} value={q}>
+                      {q === "auto"
+                        ? "Auto（自動）"
+                        : q[0].toUpperCase() + q.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="fine-print">
+                現在の品質：
+                {(quality === "auto" ? effective : quality).toUpperCase()}
+                。Lowでは区域の塗りと輪郭を表示します。
+              </p>
+              <label className="setting-row">
+                警報区域を表示
+                <input
+                  type="checkbox"
+                  checked={warningsVisible}
+                  onChange={(e) => setWarningsVisible(e.target.checked)}
+                />
+              </label>
+              <label className="setting-row">
+                地震を表示
+                <input
+                  type="checkbox"
+                  checked={quakesVisible}
+                  onChange={(e) => setQuakesVisible(e.target.checked)}
+                />
+              </label>
+              <label className="setting-row">
+                台風を表示
+                <input
+                  type="checkbox"
+                  checked={typhoonsVisible}
+                  onChange={(e) => setTyphoonsVisible(e.target.checked)}
+                />
+              </label>
+              <p className="fine-print">
+                {reducedMotion
+                  ? "動きを減らす設定：有効（演出は静止表示）"
+                  : "地震のパルスは選択時のみ表示します。"}
+              </p>
               <p className="fine-print">
                 3Dは実際の標高を1.25倍に強調しています。気象データの意味は変わりません。
               </p>
@@ -827,6 +1078,7 @@ function App() {
                 </div>
               ))}
               <p className="fine-print">
+                立体の高さは警報分類を強調する表示で、物理的な高度ではありません。
                 大雨・土砂災害・高潮は公式のレベルを名称に表示します。その他の情報に独自の警戒レベルは付けません。地図の色は発表区域を表し、区域内すべての地点が同じ危険度とは限りません。
               </p>
             </>
@@ -835,7 +1087,7 @@ function App() {
               <p className="modal-intro">
                 AMATERASは公開情報を地図上に表示します。独自の予報や警報は発表しません。
               </p>
-              {[rain.health, warnings.health].map((h) => (
+              {healthSources.map((h) => (
                 <div className="source-health" key={h.id}>
                   <div>
                     <b>{h.label}</b>
@@ -854,6 +1106,9 @@ function App() {
                   </p>
                 </div>
               ))}
+              <p className="fine-print">
+                地震：気象庁の地震情報（24時間）。台風：現行一覧と防災情報XML。地震のパルスは地震波の到達範囲ではありません。台風の予報円は中心位置の予報範囲で、台風の大きさではありません。
+              </p>
               <ul className="sources-list">
                 <li>
                   <a

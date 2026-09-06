@@ -1,3 +1,4 @@
+import { createEventService } from "./events";
 import {
   normalizeRadar,
   normalizeWarnings,
@@ -23,6 +24,7 @@ const json = (data: unknown, status = 200) =>
     },
   });
 export function createApi(options: Options = {}) {
+  const events = createEventService(options);
   const fetcher = options.fetcher ?? fetch;
   const now = options.now ?? Date.now;
   const memory = new Map<
@@ -175,8 +177,15 @@ export function createApi(options: Options = {}) {
     try {
       if (path === "/api/radar") return json(await radar());
       if (path === "/api/warnings") return json(await warnings());
+      if (path === "/api/earthquakes") return json(await events.earthquakes());
+      if (path === "/api/typhoons") return json(await events.typhoons());
       if (path === "/api/health") {
-        const values = await Promise.all([radar(), warnings()]);
+        const values = await Promise.all([
+          radar(),
+          warnings(),
+          events.earthquakes(),
+          events.typhoons(),
+        ]);
         return json(values.map((v) => v.health));
       }
       const tile = path.match(

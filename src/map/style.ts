@@ -27,6 +27,8 @@ export async function loadStyle(
     )
       layer.paint = { ...layer.paint, "line-color": "#37627c" };
     if (layer.type === "symbol" && layer.layout?.["text-field"]) {
+      if (/road|highway|transport|housenumber|airport/.test(layer.id))
+        layer.minzoom = Math.max(12, layer.minzoom ?? 0);
       layer.layout["text-field"] = [
         "coalesce",
         ["get", "name:ja"],

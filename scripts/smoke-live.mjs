@@ -34,6 +34,22 @@ await check("warnings", base + "/api/warnings", (b) => {
   const j = JSON.parse(new TextDecoder().decode(b));
   return j.health.state === "LIVE" && Array.isArray(j.data);
 });
+for (const id of ["earthquakes", "typhoons"])
+  await check(id, base + "/api/" + id, (b) => {
+    const j = JSON.parse(new TextDecoder().decode(b));
+    return (
+      j.health.state === "LIVE" &&
+      Array.isArray(j.data) &&
+      j.data.every(
+        (e) =>
+          e.source?.url.startsWith("https://") &&
+          (id === "earthquakes"
+            ? !e.position ||
+              (Math.abs(e.position[0]) <= 180 && Math.abs(e.position[1]) <= 90)
+            : e.current && e.detailState === "LIVE"),
+      )
+    );
+  });
 const f = radar.data.at(-1);
 await check(
   "radar tile",
