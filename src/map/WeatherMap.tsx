@@ -15,6 +15,12 @@ import type { FxManager } from "./fx/FxManager";
 import { groupWarnings, type WarningArea } from "./fx/geometry";
 import { QUALITY_LIMITS } from "./fx/quality";
 import { installEventLayers, setEventData } from "./fx/eventLayers";
+import {
+  graphicsPixelRatio,
+  TERRAIN_MAX_ZOOM,
+  type GraphicsSettings,
+  type RenderStats,
+} from "./graphics";
 import { RadarPlayer } from "./RadarPlayer";
 import { installRadarProtocol } from "./radarTiles";
 const empty: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -70,6 +76,8 @@ function fitRegion(
   });
 }
 interface Props {
+  graphics: GraphicsSettings;
+  onRenderStats: (stats: RenderStats) => void;
   panelOpen: boolean;
   earthquakes: EarthquakeEvent[];
   typhoons: TyphoonEvent[];
@@ -111,6 +119,13 @@ export function WeatherMap(props: Props) {
   );
   const [revision, setRevision] = useState(0);
   const geometryCache = useRef(new Map<string, Feature[]>());
+  const detailVisibility = useRef(new Map<string, string>());
+  const lastTerrainMode = useRef(props.terrain);
+  const wantsFx =
+    props.terrain &&
+    (props.quality === "auto"
+      ? effectiveRef.current !== "low"
+      : props.quality !== "low");
   const [viewRevision, setViewRevision] = useState(0);
   useEffect(() => {
     let dead = false;
@@ -142,12 +157,45 @@ export function WeatherMap(props: Props) {
             customAttribution:
               '<a href="https://www.jma.go.jp/">気象庁</a> · <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>',
           },
+          pixelRatio: graphicsPixelRatio(
+            current.current.graphics.renderScale,
+            window.devicePixelRatio,
+          ),
           maxPitch: 65,
           pitch: current.current.terrain ? 50 : 0,
           renderWorldCopies: false,
         });
         mapRef.current = map;
+        let statsKey = "";
+        const reportRenderStats = () => {
+          const canvas = map.getCanvas();
+          const stats = {
+            width: canvas.width,
+            height: canvas.height,
+            pixelRatio: map.getPixelRatio(),
+          };
+          const key = JSON.stringify(stats);
+          if (key !== statsKey) {
+            statsKey = key;
+            current.current.onRenderStats(stats);
+          }
+        };
+        const displayResized = () => {
+          const ratio = graphicsPixelRatio(
+            current.current.graphics.renderScale,
+            window.devicePixelRatio,
+          );
+          if (map.getPixelRatio() !== ratio) map.setPixelRatio(ratio);
+          reportRenderStats();
+        };
+        map.on("resize", reportRenderStats);
+        window.addEventListener("resize", displayResized);
+        map.once("remove", () =>
+          window.removeEventListener("resize", displayResized),
+        );
+        reportRenderStats();
         map.on("style.load", () => {
+          detailVisibility.current.clear();
           eventCleanup.current?.();
           if (!map.getSource("warnings"))
             map.addSource("warnings", { type: "geojson", data: empty });
@@ -234,6 +282,16 @@ export function WeatherMap(props: Props) {
                 s.startsWith("radar-"),
               ).length,
               terrain: !!map.getTerrain(),
+              pixelRatio: map.getPixelRatio(),
+              terrainMaxZoom:
+                (
+                  map.getStyle().sources.terrain as
+                    { maxzoom?: number } | undefined
+                )?.maxzoom ?? null,
+              hillshade:
+                !!map.getLayer("terrain-shading") &&
+                map.getLayoutProperty("terrain-shading", "visibility") !==
+                  "none",
             });
           });
         map.on("moveend", () => {
@@ -323,13 +381,23 @@ export function WeatherMap(props: Props) {
     const map = mapRef.current;
     if (!revision || !map?.getSource("warnings")) return;
     container.current?.removeAttribute("data-map");
+    const modeChanged = lastTerrainMode.current !== props.terrain;
+    lastTerrainMode.current = props.terrain;
     if (props.terrain) {
+      const maxzoom = TERRAIN_MAX_ZOOM[props.graphics.terrainDetail];
+      const previous = map.getStyle().sources.terrain as
+        { maxzoom?: number } | undefined;
+      if (previous && previous.maxzoom !== maxzoom) {
+        map.setTerrain(null);
+        if (map.getLayer("terrain-shading")) map.removeLayer("terrain-shading");
+        map.removeSource("terrain");
+      }
       if (!map.getSource("terrain"))
         map.addSource("terrain", {
           type: "raster-dem",
           tiles: ["gsi-dem://{z}/{x}/{y}"],
           tileSize: 256,
-          maxzoom: 14,
+          maxzoom,
           encoding: "mapbox",
           bounds: [122, 20, 154, 46],
         });
@@ -352,12 +420,18 @@ export function WeatherMap(props: Props) {
               (l) => l.id.startsWith("radar-") || l.id === "warning-fill",
             )?.id,
         );
-      map.setLayoutProperty("terrain-shading", "visibility", "visible");
-      map.setTerrain({ source: "terrain", exaggeration: 1.25 });
-      map.easeTo({
-        pitch: 50,
-        duration: current.current.reducedMotion ? 0 : 600,
-      });
+      map.setLayoutProperty(
+        "terrain-shading",
+        "visibility",
+        props.graphics.hillshade ? "visible" : "none",
+      );
+      if (!map.getTerrain())
+        map.setTerrain({ source: "terrain", exaggeration: 1.25 });
+      if (modeChanged)
+        map.easeTo({
+          pitch: 50,
+          duration: current.current.reducedMotion ? 0 : 600,
+        });
     } else {
       map.setTerrain(null);
       if (map.getLayer("terrain-shading")) map.removeLayer("terrain-shading");
@@ -368,7 +442,47 @@ export function WeatherMap(props: Props) {
         duration: current.current.reducedMotion ? 0 : 400,
       });
     }
-  }, [props.terrain, revision]);
+  }, [props.terrain, revision, props.graphics.terrainDetail]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !revision) return;
+    const ratio = graphicsPixelRatio(
+      props.graphics.renderScale,
+      window.devicePixelRatio,
+    );
+    if (map.getPixelRatio() !== ratio) map.setPixelRatio(ratio);
+    if (map.getLayer("terrain-shading"))
+      map.setLayoutProperty(
+        "terrain-shading",
+        "visibility",
+        props.graphics.hillshade ? "visible" : "none",
+      );
+    for (const layer of map.getStyle().layers) {
+      if (
+        !/building|(?:road|highway|railway).*(?:minor|service|path|track)|poi|housenumber/i.test(
+          layer.id,
+        )
+      )
+        continue;
+      if (!detailVisibility.current.has(layer.id))
+        detailVisibility.current.set(
+          layer.id,
+          map.getLayoutProperty(layer.id, "visibility") ?? "visible",
+        );
+      map.setLayoutProperty(
+        layer.id,
+        "visibility",
+        props.graphics.mapDetails
+          ? detailVisibility.current.get(layer.id)
+          : "none",
+      );
+    }
+  }, [
+    revision,
+    props.graphics.renderScale,
+    props.graphics.hillshade,
+    props.graphics.mapDetails,
+  ]);
   useEffect(() => {
     if (!revision || !props.frame) return;
     player.current?.show(
@@ -577,9 +691,20 @@ export function WeatherMap(props: Props) {
   ]);
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !revision || !props.terrain) {
+    if (!map || !revision || !wantsFx) {
       fx.current?.destroy();
       fx.current = null;
+      if (import.meta.env.DEV && container.current)
+        container.current.dataset.fx = JSON.stringify({
+          quality: "low",
+          faces: 0,
+          effects: 0,
+          layers: 0,
+          meshCache: 0,
+          builds: 0,
+          animationLoops: 0,
+          pendingBuild: 0,
+        });
       return;
     }
     let cancelled = false;
@@ -613,7 +738,7 @@ export function WeatherMap(props: Props) {
       fx.current?.destroy();
       fx.current = null;
     };
-  }, [revision, props.terrain]);
+  }, [revision, wantsFx, props.graphics.terrainDetail]);
   useEffect(() => {
     fx.current?.update({
       areas: warningAreas,

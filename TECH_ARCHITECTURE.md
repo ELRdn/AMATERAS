@@ -6,7 +6,7 @@ React 19 / TypeScript / Vite / MapLibre GL JS 5.24.0 / deck.gl 9.4.0 / 専用CSS
 
 気象庁 → 共通API（検証・正規化・独立キャッシュ）→ Vite middleware または Cloudflare Worker → useSource → App / WeatherMap / RadarPlayer / FxManager。
 
-背景はOpenFreeMap。GSI DEMをブラウザのterrain protocolでTerrainRGBへ変換し、地形と警報メッシュに共用します。deck.glは3D使用時の動的importで読み、MapLibreOverlayのinterleaved方式で1つのWebGL2コンテキストを共有します。
+背景はOpenFreeMap。GSI DEMをブラウザのterrain protocolでTerrainRGBへ変換し、地形と警報メッシュに共用します。deck.glは3Dで立体品質Medium／Highが必要なときの動的importで読み、MapLibreOverlayのinterleaved方式で1つのWebGL2コンテキストを共有します。
 
 ## モジュール
 
@@ -50,7 +50,7 @@ React 19 / TypeScript / Vite / MapLibre GL JS 5.24.0 / deck.gl 9.4.0 / 専用CSS
 
 ## 地形と立体面
 
-zoom8以下はdemgm_png、9〜14はdem_png、以降オーバーズーム。HTTP 404の未整備・海域タイルは、同じ国土地理院の低倍率タイルの該当部分を使います。符号化済みRGBを混色しない最近傍切り出しの後、符号付きcmをmへ復号します。画像内の欠損値は0mへ変換。5xx・通信失敗を0mで隠さず、2D復帰と再試行を表示します。表示地形は1.25倍です。
+zoom8以下はdemgm_png、9〜設定上限（広域10／標準12／高精細14）はdem_png、以降オーバーズーム。HTTP 404の未整備・海域タイルは、同じ国土地理院の低倍率タイルの該当部分を使います。符号化済みRGBを混色しない最近傍切り出しの後、符号付きcmをmへ復号します。画像内の欠損値は0mへ変換。5xx・通信失敗を0mで隠さず、2D復帰と再試行を表示します。表示地形は1.25倍です。
 
 MapLibreのfill/lineは常に地形上の区域を担当。立体面はearcutで穴を維持して三角形化し、共有辺に亀裂ができないよう段階的に細分化。各頂点をqueryTerrainElevationで標高化し、分類に応じた高さを加えた上面と側面をSolidPolygonLayerにまとめます。代表点で区域全体を持ち上げません。TerrainExtensionによる別の地形を追加せず、深度共有だけを地形追従の根拠にしません。
 
@@ -79,3 +79,7 @@ wrangler.jsoncのASSETSがdistを配信し、/api/*をWorkerへ渡します。CS
 ## 依存関係の終了処理パッチ
 
 luma.gl 9.4.0のcanvasイベント解除漏れと頂点配列の解放漏れを、[同梱パッチ](patches/README.md)で修正しています。pnpmのpatchedDependenciesとしてロックし、再インストールでも適用。テーマ変更時は旧スタイルの地形を明示的に解除してから置換します。終了済みFXを保持しないことをcanvasイベント数と実ブラウザのヒープで検証します。
+
+## グラフィック設定
+
+src/map/graphics.tsが検証付きの保存形式とプリセット、src/components/GraphicsSettings.tsxがUIを担当します。初期はバランス。地図のpixelRatio・DEMの最大倍率・陰影・詳細表示を独立適用し、LowではFXインスタンスを作りません。実画素数と検証結果は[グラフィック設定](GRAPHICS_SETTINGS.md)を参照。

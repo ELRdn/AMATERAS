@@ -5,7 +5,7 @@
   },
   {
     "path": "ACCEPTANCE_CRITERIA.md",
-    "size_bytes": 2720
+    "size_bytes": 2971
   },
   {
     "path": "AMATERAS_3D_EFFECTS_SPEC.md",
@@ -32,20 +32,24 @@
     "size_bytes": 5553
   },
   {
+    "path": "GRAPHICS_SETTINGS.md",
+    "size_bytes": 5764
+  },
+  {
     "path": "IMPLEMENTATION_REPORT.md",
-    "size_bytes": 12101
+    "size_bytes": 12463
   },
   {
     "path": "MVP_ROADMAP.md",
-    "size_bytes": 1884
+    "size_bytes": 2287
   },
   {
     "path": "PROJECT_SPEC.md",
-    "size_bytes": 4324
+    "size_bytes": 4726
   },
   {
     "path": "README.md",
-    "size_bytes": 6015
+    "size_bytes": 6292
   },
   {
     "path": "REFERENCE_UI_ANALYSIS.md",
@@ -53,7 +57,7 @@
   },
   {
     "path": "TECH_ARCHITECTURE.md",
-    "size_bytes": 8386
+    "size_bytes": 8883
   },
   {
     "path": "index.html",
@@ -124,6 +128,10 @@
     "size_bytes": 4788
   },
   {
+    "path": "scripts/capture-graphics.mjs",
+    "size_bytes": 4910
+  },
+  {
     "path": "scripts/inspect-sources.mjs",
     "size_bytes": 930
   },
@@ -161,11 +169,15 @@
   },
   {
     "path": "src/App.tsx",
-    "size_bytes": 41662
+    "size_bytes": 41092
   },
   {
     "path": "src/components/EventList.tsx",
     "size_bytes": 6732
+  },
+  {
+    "path": "src/components/GraphicsSettings.tsx",
+    "size_bytes": 6166
   },
   {
     "path": "src/components/Modal.tsx",
@@ -209,7 +221,7 @@
   },
   {
     "path": "src/map/WeatherMap.tsx",
-    "size_bytes": 21481
+    "size_bytes": 25643
   },
   {
     "path": "src/map/fx/FxManager.ts",
@@ -229,7 +241,11 @@
   },
   {
     "path": "src/map/fx/useFxSettings.ts",
-    "size_bytes": 1423
+    "size_bytes": 1973
+  },
+  {
+    "path": "src/map/graphics.ts",
+    "size_bytes": 2962
   },
   {
     "path": "src/map/mockRadar.ts",
@@ -249,7 +265,7 @@
   },
   {
     "path": "src/styles.css",
-    "size_bytes": 29672
+    "size_bytes": 32692
   },
   {
     "path": "tests/api.test.ts",
@@ -272,6 +288,10 @@
     "size_bytes": 8435
   },
   {
+    "path": "tests/e2e/graphics.spec.ts",
+    "size_bytes": 4824
+  },
+  {
     "path": "tests/events.test.ts",
     "size_bytes": 12079
   },
@@ -286,6 +306,10 @@
   {
     "path": "tests/fx.test.ts",
     "size_bytes": 4507
+  },
+  {
+    "path": "tests/graphics.test.ts",
+    "size_bytes": 2112
   },
   {
     "path": "tests/playback.test.ts",

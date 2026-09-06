@@ -25,3 +25,5 @@
 比較画像の模擬気象には常時MOCK DATAを表示します。E2Eでは地図・DEMも固定入力に置き換えて再現性を確保。別の画面確認では実際の背景・DEMを使います。これらを実気象との接続成功の根拠にしません。
 
 実機iOS/Android、全ブラウザ互換性、数時間のGPU/VRAM計測、全国すべての地形・区域の照合、Cloudflare公開負荷は未検証。WebGLオブジェクト数はVRAMバイト数ではなく、RAF間隔はGPU描画時間ではありません。
+
+グラフィック設定の保存・異常値・移行はtests/graphics.test.ts、画素数・地形復元・プリセット連続操作はtests/e2e/graphics.spec.ts。実背景の比較結果は[追加レポート](GRAPHICS_SETTINGS.md)を参照。

@@ -28,6 +28,8 @@ import {
   Clock3,
 } from "lucide-react";
 import { WeatherMap, type MapAction } from "./map/WeatherMap";
+import { GraphicsSettings } from "./components/GraphicsSettings";
+import type { RenderStats } from "./map/graphics";
 import { EventList } from "./components/EventList";
 import { makeEventFixture } from "./data/eventFixtures";
 import {
@@ -85,8 +87,16 @@ function App() {
     [terrain, setTerrain] = useState(initialTerrain),
     [radarVisible, setRadarVisible] = useState(scenario !== "quiet"),
     [opacity, setOpacity] = useState(0.72);
-  const { quality, setQuality, effective, setEffective, reducedMotion } =
-    useFxSettings();
+  const {
+    graphics,
+    setGraphics,
+    quality,
+    effective,
+    setEffective,
+    reducedMotion,
+    osReducedMotion,
+  } = useFxSettings();
+  const [renderStats, setRenderStats] = useState<RenderStats | null>(null);
   const [tab, setTab] = useState<"warnings" | "earthquakes" | "typhoons">(
     "warnings",
   );
@@ -308,6 +318,7 @@ function App() {
   };
   return (
     <main
+      data-animations={reducedMotion ? "off" : "on"}
       className={`app ${theme} ${sheet ? "sheet-open" : ""} ${timelineOpen ? "timeline-open" : ""}`}
     >
       <header className="topbar">
@@ -413,6 +424,8 @@ function App() {
       </header>
       <section className="map-stage">
         <WeatherMap
+          graphics={graphics}
+          onRenderStats={setRenderStats}
           panelOpen={sheet}
           earthquakes={quakesVisible ? currentQuakes : emptyQuakes}
           typhoons={typhoonsVisible ? currentTyphoons : emptyTyphoons}
@@ -954,7 +967,14 @@ function App() {
         >
           {modal === "settings" ? (
             <>
-              <p className="modal-intro">地図の見やすさを調整します。</p>
+              <GraphicsSettings
+                settings={graphics}
+                onChange={setGraphics}
+                stats={renderStats}
+                effective={effective}
+                osReducedMotion={osReducedMotion}
+              />
+              <h3>表示する情報</h3>
               <label className="setting-row">
                 雨雲を表示
                 <input
@@ -995,27 +1015,6 @@ function App() {
               </label>
 
               <label className="setting-row">
-                立体表現の品質
-                <select
-                  aria-label="立体表現の品質"
-                  value={quality}
-                  onChange={(e) => setQuality(e.target.value as typeof quality)}
-                >
-                  {["auto", "low", "medium", "high"].map((q) => (
-                    <option key={q} value={q}>
-                      {q === "auto"
-                        ? "Auto（自動）"
-                        : q[0].toUpperCase() + q.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="fine-print">
-                現在の品質：
-                {(quality === "auto" ? effective : quality).toUpperCase()}
-                。Lowでは区域の塗りと輪郭を表示します。
-              </p>
-              <label className="setting-row">
                 警報区域を表示
                 <input
                   type="checkbox"
@@ -1039,11 +1038,6 @@ function App() {
                   onChange={(e) => setTyphoonsVisible(e.target.checked)}
                 />
               </label>
-              <p className="fine-print">
-                {reducedMotion
-                  ? "動きを減らす設定：有効（演出は静止表示）"
-                  : "地震のパルスは選択時のみ表示します。"}
-              </p>
               <p className="fine-print">
                 3Dは実際の標高を1.25倍に強調しています。気象データの意味は変わりません。
               </p>

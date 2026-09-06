@@ -1716,3 +1716,152 @@ select:focus-visible {
     transition: none !important;
   }
 }
+
+/* Graphics controls keep the app UI sharp while only the map changes resolution. */
+.modal:has(.graphics-settings) {
+  width: 660px;
+  max-height: 88dvh;
+}
+.graphics-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0 16px;
+}
+.graphics-heading > div > span {
+  font:
+    10px Consolas,
+    monospace;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+.graphics-heading h3 {
+  font-size: 19px;
+  margin: 5px 0 0;
+  color: inherit;
+}
+.graphics-current {
+  color: var(--cyan);
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.graphics-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.graphics-presets button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  min-height: 112px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  text-align: left;
+  color: inherit;
+  background: #17304755;
+}
+.graphics-presets button[aria-pressed="true"] {
+  border-color: var(--cyan);
+  background: #00bcd418;
+  box-shadow: inset 0 2px var(--cyan);
+}
+.graphics-presets strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.graphics-presets small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.graphics-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: space-between;
+  padding: 13px 0 3px;
+  font-size: 11px;
+}
+.graphics-readout b {
+  margin-left: 7px;
+  font:
+    12px Consolas,
+    monospace;
+  color: var(--cyan);
+}
+.graphics-readout small,
+.graphics-help {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.graphics-help {
+  margin: 10px 0;
+}
+.graphics-settings .setting-row > span {
+  font-size: 13px;
+}
+.graphics-settings .setting-row small {
+  display: block;
+  margin-top: 6px;
+  max-width: 330px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.graphics-settings select {
+  min-width: 146px;
+}
+.graphics-settings input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+}
+.app[data-animations="off"] *,
+.app[data-animations="off"] *::before,
+.app[data-animations="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.light .graphics-presets button {
+  background: #ffffff80;
+}
+.light .graphics-presets button[aria-pressed="true"] {
+  background: #e0f6f9;
+}
+@media (max-width: 700px) {
+  .modal:has(.graphics-settings) .modal-inner {
+    padding: 18px;
+  }
+  .graphics-presets {
+    gap: 6px;
+  }
+  .graphics-presets button {
+    min-height: 104px;
+    padding: 11px 8px;
+  }
+  .graphics-presets strong {
+    font-size: 13px;
+  }
+  .graphics-presets small {
+    font-size: 9px;
+  }
+  .graphics-settings .setting-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .graphics-settings .setting-row:has(select) > span {
+    flex-basis: 100%;
+  }
+  .graphics-settings .setting-row:has(select) select {
+    width: 100%;
+  }
+  .graphics-settings .setting-row:has(input) > span {
+    flex: 1;
+  }
+}

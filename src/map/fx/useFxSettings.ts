@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import type { FxQuality, EffectiveQuality } from "../../data/types";
+import {
+  GRAPHICS_KEY,
+  GRAPHICS_PRESETS,
+  readGraphics,
+  type GraphicsSettings,
+} from "../graphics";
 export function initialTerrain() {
   try {
     return localStorage.getItem("amateras.terrain") !== "false";
@@ -15,32 +21,50 @@ export function storeTerrain(v: boolean) {
   }
 }
 export function useFxSettings() {
-  const [quality, setQuality] = useState<FxQuality>(() => {
+  const [graphics, setGraphics] = useState<GraphicsSettings>(() => {
     try {
-      const q = localStorage.getItem("amateras.fxQuality");
-      return ["auto", "low", "medium", "high"].includes(q ?? "")
-        ? (q as FxQuality)
-        : "auto";
+      return readGraphics(
+        localStorage.getItem(GRAPHICS_KEY),
+        localStorage.getItem("amateras.fxQuality"),
+      );
     } catch {
-      return "auto";
+      return { ...GRAPHICS_PRESETS.balanced };
     }
   });
+  const quality = graphics.fxQuality;
+  const setQuality = (q: FxQuality) =>
+    setGraphics((g) => ({ ...g, fxQuality: q }));
   const [effective, setEffective] = useState<EffectiveQuality>(() =>
     matchMedia("(max-width:700px)").matches ? "low" : "medium",
   );
-  const [reducedMotion, setReducedMotion] = useState(
+  const [osReducedMotion, setOsReducedMotion] = useState(
     () => matchMedia("(prefers-reduced-motion:reduce)").matches,
   );
   useEffect(() => {
     try {
+      localStorage.setItem(
+        GRAPHICS_KEY,
+        JSON.stringify({ version: 1, settings: graphics }),
+      );
       localStorage.setItem("amateras.fxQuality", quality);
-    } catch {}
-  }, [quality]);
+    } catch {
+      /* Storage can be disabled without blocking the map. */
+    }
+  }, [graphics, quality]);
   useEffect(() => {
     const m = matchMedia("(prefers-reduced-motion:reduce)");
-    const f = () => setReducedMotion(m.matches);
+    const f = () => setOsReducedMotion(m.matches);
     m.addEventListener("change", f);
     return () => m.removeEventListener("change", f);
   }, []);
-  return { quality, setQuality, effective, setEffective, reducedMotion };
+  return {
+    graphics,
+    setGraphics,
+    quality,
+    setQuality,
+    effective,
+    setEffective,
+    osReducedMotion,
+    reducedMotion: osReducedMotion || !graphics.animations,
+  };
 }
